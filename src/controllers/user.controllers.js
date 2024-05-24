@@ -254,7 +254,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) =>
 const getCurrentUser = asyncHandler(async (req, res) =>
 {
     return res.status(200)
-    .json(200, req.user , "current user fetched succesfully ")
+    .json(new ApiResponse(200, req.user , "current user fetched succesfully "))
 })
 
 const updateAccoutDetails = asyncHandler(async (req, res) =>
@@ -264,7 +264,7 @@ const updateAccoutDetails = asyncHandler(async (req, res) =>
     if (!(fullName || email)) {
         throw new ApiError(400, "All Fields are required")
     }
-    const user = user.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -292,8 +292,7 @@ const updateUserAvatar = asyncHandler(async (req, res) =>
         throw new ApiError(400, "Error while uploading on avatar")
     }
 
-    const user  = await User.findByIdAndUpdate
-        (
+    const user = await User.findByIdAndUpdate(
             req.user?._id,
             {
                 $set: {
@@ -303,6 +302,7 @@ const updateUserAvatar = asyncHandler(async (req, res) =>
             { new: true }
             
     ).select("-password")
+    
 
     return res
         .status(200)
@@ -322,8 +322,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) =>
         throw new ApiError(400, "Error while uploading on cover Image")
     }
 
-    const user = await User.findByIdAndUpdate
-        (
+    const user = await User.findByIdAndUpdate(
             req.user?._id,
             {
                 $set: {
