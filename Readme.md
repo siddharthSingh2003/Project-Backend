@@ -28,11 +28,6 @@ This project is the backend for a video streaming and social media platform. It 
 - **Multer**: For handling file uploads.
 - **Middlewares**: Various middlewares for request handling and processing.
 
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/backend-video-streaming-social-media.git
 
 
 
