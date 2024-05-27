@@ -17,7 +17,9 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 // console.log('registerUser:', registerUser); 
 const router = Router()
 
-router.route("/register").post(
+router
+    .route("/register")
+    .post(
     upload.fields([
         {
             name: "avatar",
