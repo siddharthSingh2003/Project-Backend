@@ -10,6 +10,7 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -151,6 +152,30 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    if (!videoId) {
+        throw new ApiError(400, "video not found")
+
+
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(400, "Video not found")
+    }
+
+    if (video.isPublished) {
+        video.isPublished =!video.isPublished;
+    }
+    else if (!video.isPublished){
+        video.isPublished = true
+    }
+
+    await video.save()
+
+    return res.status(200)
+    .json(new ApiResponse(200, video.isPublished, "toggle done "))
 })
 
 export {
