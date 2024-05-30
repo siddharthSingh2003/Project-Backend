@@ -10,6 +10,7 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    
 
 })
 
@@ -49,10 +50,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
             description,
             videoFile : videoFile.url,
             thumbnail: thumbnail.url,
-            duration:videoDuration
+            duration: videoDuration,
+            owner : req.user._id
         })
     
-        const uploadedVideo = await Video.findById(video._id)
+        const uploadedVideo = await Video.findById(video._id).populate("owner", "-password")
     
         if (!uploadedVideo) {
             throw new ApiError(500, "something went wrong while uploading video")
@@ -77,13 +79,14 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     try {
         const video = await Video.findById(videoId);
+
     
         if (!video) {
             throw new ApiError(400, "video not found")
         }
-    
+        console.log(video);
         return res.status(200)
-        .json(new ApiResponse(200, req.video, "Video fetched Successfully"))
+        .json(new ApiResponse(200, video, "Video fetched Successfully"))
     } catch (error) {
         throw new ApiError(500, "Intenal Server Error")
     }
@@ -140,14 +143,26 @@ const deleteVideo = asyncHandler(async (req, res) => {
     }
     
 
-   try {
-     await Video.findByIdAndDelete(videoId)
-     
-     return res.status(200)
-     .json(new ApiResponse(200, "Video deleted"))
-   } catch (error) {
-    throw new ApiError(500, "Internal Server error")
-   }
+    try {
+       
+        const video = await Video.findById(videoId);
+
+        if (!video) {
+            throw new ApiError(404, "video not found");
+        }
+        
+        if (video.owner.toString() !== req.user._id.toString()) {
+            
+            throw new ApiError(403, "You are not authorized to delete this video");
+        }
+        console.log("wrong user");
+        await Video.findByIdAndDelete(videoId);
+        
+        return res.status(200)
+            .json(new ApiResponse(200, "Video deleted"));
+    } catch (error) {
+        throw new ApiError(500, error.message ||"Internal Server error");
+    }
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
@@ -159,23 +174,30 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
     }
 
-    const video = await Video.findById(videoId)
-
-    if (!video) {
-        throw new ApiError(400, "Video not found")
+    try {
+        const video = await Video.findById(videoId)
+    
+        if (!video) {
+            throw new ApiError(400, "Video not found")
+        }
+        
+        if (video.owner.toString() !== req.user._id.toString()) {
+            throw new ApiError(403, "You are not authorized to toggel this video ")
+        }
+        if (video.isPublished) {
+            video.isPublished =!video.isPublished;
+        }
+        else if (!video.isPublished){
+            video.isPublished = true
+        }
+    
+        await video.save()
+    
+        return res.status(200)
+        .json(new ApiResponse(200, video.isPublished, "toggle done "))
+    } catch (error) {
+        throw new ApiError(500, error.message || "Internal Server Error");
     }
-
-    if (video.isPublished) {
-        video.isPublished =!video.isPublished;
-    }
-    else if (!video.isPublished){
-        video.isPublished = true
-    }
-
-    await video.save()
-
-    return res.status(200)
-    .json(new ApiResponse(200, video.isPublished, "toggle done "))
 })
 
 export {
