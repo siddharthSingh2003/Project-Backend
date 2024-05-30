@@ -88,7 +88,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         return res.status(200)
         .json(new ApiResponse(200, video, "Video fetched Successfully"))
     } catch (error) {
-        throw new ApiError(500, "Intenal Server Error")
+        throw new ApiError(500, error.message || "Intenal Server Error")
     }
 
 
@@ -99,36 +99,56 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
-
+    const { title, description } = req.body;
     if (!videoId) {
         throw new ApiError(400, "Video not found")
     }
     
+    if (!(title || description)) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    try {
+        const video = await Video.findById(videoId);
     
-    const thumbnailLocalPath = req.file?.path
-    if (!thumbnailLocalPath) {
-        throw new ApiError(400, "thumbnail not given")
+        if (!video) {
+            throw new ApiError(404,"Video not found")
+        }
+        
+        if (video.owner.toString() !== req.user._id.toString()) {
+            
+            throw new ApiError(403, "You are not authorized to update this video");
+        }
+        
+        const thumbnailLocalPath = req.file?.path
+        if (!thumbnailLocalPath) {
+            throw new ApiError(400, "thumbnail not given")
+        }
+    
+        const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    
+        if (!thumbnail.url) {
+            throw new ApiError(400, "Error while uploading thumbnail")
+        }
+    
+        const updatevideo = await Video.findByIdAndUpdate(
+            videoId,
+            {
+                $set: {
+                    title, description,
+                    thumbnail: thumbnail.url
+                }
+            },
+            {new:true, runValidators:true}
+        )
+    
+        return res
+            .status(200)
+            .json(new ApiResponse(200, updatevideo, "thumbanail updated successfully"))
+    } catch (error) {
+        throw new ApiError(500, error.message || "Internal server error")
+        
     }
-
-    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
-
-    if (!thumbnail.url) {
-        throw new ApiError(400, "Error while uploading thumbnail")
-    }
-
-    const updatevideo = await Video.findByIdAndUpdate(
-        videoId,
-        {
-            $set: {
-                thumbnail: thumbnail.url
-            }
-        },
-        {new:true, runValidators:true}
-    )
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, updatevideo, "thumbanail updated successfully"))
     
     
 
