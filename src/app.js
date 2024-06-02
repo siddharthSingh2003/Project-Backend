@@ -16,14 +16,21 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 
+app.post("/test-body", (req, res) => {
+    console.log("Request body:", req.body);
+    res.status(200).send(req.body);
+})
 
 //routes
 import userRouter from "./routes/user.routes.js"
 import videoRouter from "./routes/video.routes.js"
+import tweetRouter from "./routes/tweet.routes.js"
+
 
 //routs decleration 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/videos", videoRouter)
+app.use("/api/v1/tweets", tweetRouter)
 
 
 export {app}
