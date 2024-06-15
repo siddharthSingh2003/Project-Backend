@@ -2,7 +2,8 @@ import mongoose, {isValidObjectId} from "mongoose"
 import {Playlist} from "../models/playlist.models.js"
 import {ApiError} from "../utils/ApiErrors.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import {Video} from "../models/video.models.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -38,7 +39,49 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 })
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-    const {playlistId, videoId} = req.params
+    const { playlistId, videoId } = req.params
+    
+    if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid PlaylistID or VideoID")
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+    const video = await Video.findById(videoId);
+
+    if (!playlist) {
+        throw new ApiError(404, "playlist not fornd");
+    }
+    if (!video) {
+        throw new ApiError(404, "video not found");
+    }
+
+    if ((playlist.owner?.toString() && video.owner.toString()) !== req.user?._id.toString()) {
+        throw new ApiError(400, "only owner can add video to their playlist")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlist?._id,
+        {
+            $addToSet: {
+                videos: videoId,
+                
+            },
+        },
+        {
+            new:true
+        }
+    )
+
+    if (!updatedPlaylist) {
+        throw new ApiError(400, "failed to add video to playlist. Try again")
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(
+            200, updatedPlaylist,
+            "Video added to playlist successfully"
+    ))
 })
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
