@@ -144,18 +144,104 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
     // TODO: remove video from playlist
+    if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
+        throw new ApiError(400, "invalid PlaylistiD or Video ID");
+    }
 
+    const playlist = await Playlist.findById(playlistId);
+    const video = await Video.findById(videoId);
+
+    if (!playlist) {
+        throw new ApiError(400, "Playlist not found");
+    }
+
+    if (!video) {
+        throw new ApiError(400, "Video not found");
+    }
+
+    if ((playlist.owner?.toString() && video.owner.toString()) !== req.user?._id.toString()) {
+        throw new ApiError(404, "only owner can remove video from theor playlist");
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $pull: {
+                videos:videoId,
+            },
+        },
+        {new :true}
+    )
+
+        
+    return res.status(200)
+    .json(new ApiResponse(200, updatedPlaylist, "removed Video from playlist"))
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     // TODO: delete playlist
+    if (!isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Playlist not found")
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+        throw new ApiError(400, "Playlist not found")
+    }
+
+    if (playlist.owner.toString() !== req.user?._id.toString()) {
+        throw new ApiError(400, "only owner can delete the playlist");
+    }
+
+    await Playlist.findByIdAndDelete(playlist?._id);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Playlist deleted "))
+    
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     const {name, description} = req.body
     //TODO: update playlist
+
+    if (!name || !description) {
+        throw new ApiError(400, "name and description required")
+    }
+
+    if (!isValidObjectId(playlistId)) {
+        throw new ApiError(400, "invalid Playlist id")
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+        throw new ApiError(400, "Playlist not found")
+    }
+
+    if (playlist.owner.toString() !== req.user?._id.toString()) {
+        throw new ApiError(400, "only owner can edit the playlist")
+    }
+
+    const updatePlaylist = await Playlist.findByIdAndUpdate(
+        playlist?._id,
+        {
+            $set: {
+                name,
+                description,
+            },
+        },
+        {
+            new:true
+        }
+    )
+
+    return res
+        .status(200)
+    .json(new ApiResponse(200, updatePlaylist, "playlist updated"))
 })
 
 export {
