@@ -77,13 +77,13 @@ const updateComment = asyncHandler(async (req, res) => {
         { new: true }
     );
 
-    if (!updateComment) {
+    if (!updatedComment) {
         throw new ApiError(500, "couldn't update comment try again");
     }
 
     return res
         .status(200)
-        .json(new ApiResponse(200, updateComment, "comment updated successfully"))
+        .json(new ApiResponse(200, updatedComment, "comment updated successfully"))
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
