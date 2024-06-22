@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose, { isValidObjectId } from "mongoose"
 import {Comment} from "../models/comment.models.js"
 import {ApiError} from "../utils/ApiErrors.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -45,11 +45,50 @@ const addComment = asyncHandler(async (req, res) => {
 })
 
 const updateComment = asyncHandler(async (req, res) => {
-    // TODO: update a comment
+    
+    const { content } = req.body;
+    const { commentId } = req.params;
+
+    if (!content) {
+        throw new ApiError(404, "content is required")
+    }
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid commnet id")
+    }
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+        throw new ApiError(404, "Comment not found")
+    }
+
+    if (comment?.owner.toString() !== req.user?._id.toString()) {
+        throw new ApiError(400, "only owner can edit comment");
+    }
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set: {
+                content,
+            },
+        },
+        { new: true }
+    );
+
+    if (!updateComment) {
+        throw new ApiError(500, "couldn't update comment try again");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, updateComment, "comment updated successfully"))
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
-    // TODO: delete a comment
+   
+    
 })
 
 export {
