@@ -88,7 +88,26 @@ const updateComment = asyncHandler(async (req, res) => {
 
 const deleteComment = asyncHandler(async (req, res) => {
    
-    
+    const { commentId } = req.params;
+    if (!commentId) {
+        throw new ApiError(400, "comment id required")
+    }
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+        throw new ApiError(400, "comment not found")
+    }
+
+    if (comment.owner.toString() !== req.user?._id.toString()) {
+        throw new ApiError(403, "only owner can delete comment")
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+
+    return res.status(200)
+    .json(new ApiResponse(200, "commnent deleted"))
+
 })
 
 export {
